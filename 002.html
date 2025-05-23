@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>1〜25 順番ゲーム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 10px;
+    }
+    h1 {
+      margin-top: 10px;
+      font-size: 24px;
+    }
+    #timer, #highscore {
+      font-size: 18px;
+      margin: 5px;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(50px, 1fr));
+      gap: 8px;
+      max-width: 300px;
+      margin: 20px auto;
+    }
+    .cell {
+      padding: 0;
+      font-size: 18px;
+      background: white;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      cursor: pointer;
+      height: 0;
+      padding-bottom: 100%; /* 正方形にするため */
+      position: relative;
+    }
+    .cell span {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .cell.correct {
+      background: #90ee90;
+      pointer-events: none;
+    }
+    #startBtn {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #result {
+      font-size: 18px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>1〜25 順番ゲーム</h1>
+  <button id="startBtn">スタート</button>
+  <div id="timer">タイム: 0.00 秒</div>
+  <div id="highscore">ハイスコア: -- 秒</div>
+  <div id="grid"></div>
+  <div id="result"></div>
+
+  <script>
+    const grid = document.getElementById('grid');
+    const timerDisplay = document.getElementById('timer');
+    const resultDisplay = document.getElementById('result');
+    const highscoreDisplay = document.getElementById('highscore');
+    const startBtn = document.getElementById('startBtn');
+
+    let current = 1;
+    let startTime = null;
+    let timerInterval = null;
+
+    function shuffle(array) {
+      return array.sort(() => Math.random() - 0.5);
+    }
+
+    function updateTimer() {
+      const now = performance.now();
+      const elapsed = ((now - startTime) / 1000).toFixed(2);
+      timerDisplay.textContent = `タイム: ${elapsed} 秒`;
+    }
+
+    function loadHighscore() {
+      const hs = localStorage.getItem('highscore');
+      if (hs) {
+        highscoreDisplay.textContent = `ハイスコア: ${parseFloat(hs).toFixed(2)} 秒`;
+      } else {
+        highscoreDisplay.textContent = 'ハイスコア: -- 秒';
+      }
+    }
+
+    function setHighscore(score) {
+      const currentHS = parseFloat(localStorage.getItem('highscore'));
+      if (!currentHS || score < currentHS) {
+        localStorage.setItem('highscore', score);
+        loadHighscore();
+        return true;
+      }
+      return false;
+    }
+
+    function startGame() {
+      const numbers = shuffle(Array.from({ length: 25 }, (_, i) => i + 1));
+      grid.innerHTML = '';
+      current = 1;
+      resultDisplay.textContent = '';
+      timerDisplay.textContent = 'タイム: 0.00 秒';
+
+      numbers.forEach(num => {
+        const btn = document.createElement('div');
+        btn.className = 'cell';
+        btn.innerHTML = `<span>${num}</span>`;
+        btn.addEventListener('click', () => {
+          if (parseInt(btn.innerText) === current) {
+            btn.classList.add('correct');
+            current++;
+            if (current === 2) {
+              startTime = performance.now();
+              timerInterval = setInterval(updateTimer, 100);
+            }
+            if (current > 25) {
+              clearInterval(timerInterval);
+              const finalTime = ((performance.now() - startTime) / 1000).toFixed(2);
+              timerDisplay.textContent = `タイム: ${finalTime} 秒`;
+              const newRecord = setHighscore(finalTime);
+              resultDisplay.textContent = `クリア！${newRecord ? '🎉 新記録！' : 'お疲れさまでした！'}`;
+            }
+          }
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    startBtn.addEventListener('click', () => {
+      startGame();
+    });
+
+    loadHighscore();
+  </script>
+</body>
+</html>
